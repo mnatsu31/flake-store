@@ -11,7 +11,7 @@ npm install --save flakestore
 ## Example
 
 ```javascript
-import FlakeStore from '../';
+import FlakeStore from 'flakestore';
 import { Dispatcher } from 'flux';
 
 const store = new FlakeStore(new Dispatcher());
