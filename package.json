@@ -1,0 +1,44 @@
+{
+  "name": "flakestore",
+  "version": "0.0.1",
+  "description": "simple flux store implementation",
+  "main": "index.js",
+  "scripts": {
+    "build": "gulp",
+    "test": "gulp test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mnatsu31/flakestore.git"
+  },
+  "keywords": [
+    "flux",
+    "store",
+    "flake"
+  ],
+  "files": [
+    "LICENSE",
+    "README.md",
+    "index.js",
+    "lib"
+  ],
+  "author": "mnatsu31",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mnatsu31/flakestore/issues"
+  },
+  "homepage": "https://github.com/mnatsu31/flakestore#readme",
+  "devDependencies": {
+    "babel-preset-es2015": "^6.3.13",
+    "babel-preset-stage-0": "^6.3.13",
+    "flux": "^2.1.1",
+    "gulp": "^3.9.0",
+    "gulp-babel": "^6.1.1",
+    "gulp-espower": "^1.0.2",
+    "gulp-load-plugins": "^1.1.0",
+    "gulp-mocha": "^2.2.0",
+    "gulp-plumber": "^1.0.1",
+    "gulp-sourcemaps": "^1.6.0",
+    "power-assert": "^1.2.0"
+  }
+}
