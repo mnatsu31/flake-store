@@ -1,5 +1,7 @@
 # flakestore
 
+[![npm version](https://badge.fury.io/js/flakestore.svg)](https://badge.fury.io/js/flakestore)
+
 simple flux store implementation
 
 ## Install
