@@ -22,7 +22,20 @@ let counter = (state = 0, action) => {
   }
 }
 
-store.register({ counter });
+let asyncCounter = (state = 0, action) => {
+  switch(action.actionType) {
+    case INCREMENTS:
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          resolve(state + 1);
+        }, 1000);
+      });
+    case DECREMENTS:
+      return state - 1;
+    default:
+      return state;
+  }
+}
 
 describe('FlakeStore', () => {
   it('handler test', () => {
@@ -44,13 +57,37 @@ describe('FlakeStore', () => {
     state = counter(state, { actionType: INCREMENTS });
     assert.equal(state, 3);
   });
-  it('flow test', (done) => {
-    store.subscribe(() => {
+  it('sync flow test', (done) => {
+    store.register({ counter });
+
+    let subscriber = () => {
       let state = store.getState();
       if (state.counter === 3) {
+        store.unsubscribe(subscriber);
         done();
       }
-    });
+    };
+
+    store.subscribe(subscriber);
+
+    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: DECREMENTS });
+    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: INCREMENTS });
+  });
+  it('async flow test', (done) => {
+    store.register({ asyncCounter });
+
+    let subscriber = () => {
+      let state = store.getState();
+      if (state.asyncCounter === 3) {
+        store.unsubscribe(subscriber);
+        done();
+      }
+    };
+
+    store.subscribe(subscriber);
 
     store.dispatch({ actionType: INCREMENTS });
     store.dispatch({ actionType: INCREMENTS });
