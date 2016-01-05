@@ -88,3 +88,14 @@ store.dispatch({ actionType: DECREMENTS }); // { asyncCounter: 1 }
 store.dispatch({ actionType: INCREMENTS }); // { asyncCounter: 2 }
 store.dispatch({ actionType: INCREMENTS }); // { asyncCounter: 3 }
 ```
+
+### handling initialization
+
+The register method returns `Promise`, so you can call `then` and handle initialization.
+
+```javascript
+store.register(handlers)
+  .then((initialState) => {
+    // do something...
+  });
+```

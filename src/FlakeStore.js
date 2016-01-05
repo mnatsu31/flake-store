@@ -28,10 +28,10 @@ class FlakeStore extends EventEmitter {
   register(handlers) {
     // convert to Handler array
     handlers = Object.keys(handlers).map((key) => createHandler(key, handlers[key]));
-    // update new handlers by initiale state
-    this._update(handlers, { actionType: ActionTypes.INIT });
     // register new handlers
     this.handlers = [...this.handlers, ...handlers];
+    // update new handlers by initiale state
+    return this._update(handlers, { actionType: ActionTypes.INIT });
   }
   dispatch(action) {
     this.dispatcher.dispatch(action);
@@ -47,28 +47,28 @@ class FlakeStore extends EventEmitter {
     this._update(this.handlers, action);
   }
   _update(handlers, action) {
-    let createReducer = (handler) => {
-      return handlers.reduce((promise, handler) => {
-        let key = handler.key;
-        return promise.then((state) => {
-          return handler.applyState(state[key], action).then((value) => {
-            return { ...state, ...toHash(key, value) };
+    let createReducer = () => {
+      return handlers.reduce((p, h) => {
+        return p.then((state) => {
+          return h.applyState(state[h.key], action).then((value) => {
+            return { ...state, ...toHash(h.key, value) };
           });
         });
-      }, Promise.resolve(this.state)).then((_state) => {
+      }, Promise.resolve(this.state));
+    };
+
+    this.reducer = !this.reducer ? createReducer() : this.reducer.then(() => createReducer());
+
+    return this.reducer
+      .then((_state) => {
         this.reducer = undefined;
         this.state = _state;
         this.emit(CHANGE_EVENT);
-      }).catch((e) => {
-        // TODO: error handling
+        return _state;
+      })
+      .catch((e) => { // TODO: error handling
+        console.log(e);
       });
-    };
-
-    if (!this.reducer) {
-      this.reducer = createReducer(handlers);
-    } else {
-      this.reducer = this.reducer.then(() => createReducer(handlers));
-    }
   }
 };
 
