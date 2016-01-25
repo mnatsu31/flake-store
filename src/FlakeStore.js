@@ -20,6 +20,7 @@ class FlakeStore extends EventEmitter {
     this.state = {};
 
     this.reducer = undefined;
+    this.handleError = () => {};
   }
   // public methods
   getState() {
@@ -41,6 +42,9 @@ class FlakeStore extends EventEmitter {
   }
   unsubscribe(callback) {
     this.removeListener(CHANGE_EVENT, callback);
+  }
+  onError(handleError) {
+    this.handleError = handleError;
   }
   // private methods
   _handle(action) {
@@ -66,9 +70,7 @@ class FlakeStore extends EventEmitter {
         this.emit(CHANGE_EVENT);
         return _state;
       })
-      .catch((e) => { // TODO: error handling
-        console.log(e);
-      });
+      .catch(this.handleError);
   }
 };
 

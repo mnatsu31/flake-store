@@ -10,6 +10,7 @@ const store = new FlakeStore(new Dispatcher());
 const INIT = 'INIT';
 const INCREMENTS = 'INCREMENTS';
 const DECREMENTS = 'DECREMENTS';
+const ERROR = 'ERROR';
 
 let counter = (state = 0, action) => {
   switch(action.actionType) {
@@ -32,6 +33,15 @@ let asyncCounter = (state = 0, action) => {
       });
     case DECREMENTS:
       return state - 1;
+    default:
+      return state;
+  }
+}
+
+let errorHandler = (state = void 0, action) => {
+  switch (action.actionType) {
+    case ERROR:
+      throw new Error('error');
     default:
       return state;
   }
@@ -94,5 +104,15 @@ describe('FlakeStore', () => {
     store.dispatch({ actionType: DECREMENTS });
     store.dispatch({ actionType: INCREMENTS });
     store.dispatch({ actionType: INCREMENTS });
+  });
+  it('error test', (done) => {
+    store.register({ errorHandler });
+
+    let subscriber = () => { /* ..do anything */ };
+    store.subscribe(subscriber);
+
+    store.onError(() => { done() });
+
+    store.dispatch({ actionType: ERROR });
   });
 });
