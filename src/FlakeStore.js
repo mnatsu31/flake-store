@@ -2,7 +2,6 @@
 
 import { EventEmitter } from 'events';
 import { createHandler } from './utils/createHandler';
-import { toHash } from './utils/toHash';
 
 export const ActionTypes = {
   INIT: '@@flake/INIT'
@@ -55,7 +54,7 @@ class FlakeStore extends EventEmitter {
       return handlers.reduce((p, h) => {
         return p.then((state) => {
           return h.applyState(state[h.key], action).then((value) => {
-            return { ...state, ...toHash(h.key, value) };
+            return { ...state, [h.key]: value };
           });
         });
       }, Promise.resolve(this.state));
