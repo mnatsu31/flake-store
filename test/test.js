@@ -3,9 +3,8 @@
 import assert from 'power-assert';
 
 import FlakeStore from '../';
-import { Dispatcher } from 'flux';
 
-const store = new FlakeStore(new Dispatcher());
+const store = new FlakeStore();
 
 const INIT = 'INIT';
 const INCREMENTS = 'INCREMENTS';
@@ -115,7 +114,7 @@ describe('FlakeStore', () => {
 
     store.dispatch({ actionType: ERROR });
   });
-  it('unregister handlers', (done) => {
+  it('unregister handlers', () => {
     assert.equal(store.handlers.length, 3);
 
     store.unregister({ counter });
@@ -126,7 +125,5 @@ describe('FlakeStore', () => {
 
     store.unregister({ errorHandler });
     assert.equal(store.handlers.length, 0);
-
-    done();
   });
 });

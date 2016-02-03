@@ -9,21 +9,26 @@ export const ActionTypes = {
 
 export const CHANGE_EVENT = 'change';
 
+let _state = {};
+
+let _reducer = (arr) => arr.reduce((state, next) => {
+  return { ...state, ...next }
+}, {});
+
+let _createReducer = (handlers, state, action) => {
+  return Promise.all(handlers.map(h => h.applyState(state[h.key], action))).then(_reducer);
+};
+
 class FlakeStore extends EventEmitter {
-  constructor(dispatcher) {
-    super()
-    this.dispatcher = dispatcher;
-    this.dispatcher.register(::this._handle);
-
+  constructor() {
+    super();
     this.handlers = [];
-    this.state = {};
-
-    this.reducer = undefined;
     this.handleError = () => {};
+    this.reducer = Promise.resolve(_state);
   }
   // public methods
   getState() {
-    return this.state;
+    return _state;
   }
   register(handlers) {
     // convert to Handler array
@@ -38,7 +43,7 @@ class FlakeStore extends EventEmitter {
     this.handlers = this.handlers.filter((h) => keys.indexOf(h.key) === -1);
   }
   dispatch(action) {
-    this.dispatcher.dispatch(action);
+    this._update(this.handlers, action);
   }
   subscribe(callback) {
     this.on(CHANGE_EVENT, callback);
@@ -50,28 +55,14 @@ class FlakeStore extends EventEmitter {
     this.handleError = handleError;
   }
   // private methods
-  _handle(action) {
-    this._update(this.handlers, action);
-  }
   _update(handlers, action) {
-    let createReducer = () => {
-      return handlers.reduce((p, h) => {
-        return p.then((state) => {
-          return h.applyState(state[h.key], action).then((value) => {
-            return { ...state, [h.key]: value };
-          });
-        });
-      }, Promise.resolve(this.state));
-    };
-
-    this.reducer = !this.reducer ? createReducer() : this.reducer.then(() => createReducer());
+    this.reducer = this.reducer.then((state) => _createReducer(handlers, state, action));
 
     return this.reducer
-      .then((_state) => {
-        this.reducer = undefined;
-        this.state = _state;
+      .then((newState) => {
+        _state = newState;
         this.emit(CHANGE_EVENT);
-        return _state;
+        return newState;
       })
       .catch(this.handleError);
   }

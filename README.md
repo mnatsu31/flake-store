@@ -16,9 +16,8 @@ npm install --save flakestore
 
 ```javascript
 import FlakeStore from 'flakestore';
-import { Dispatcher } from 'flux';
 
-const store = new FlakeStore(new Dispatcher());
+const store = new FlakeStore();
 
 const INIT = 'INIT';
 const INCREMENTS = 'INCREMENTS';
@@ -98,4 +97,25 @@ store.register(handlers)
   .then((initialState) => {
     // do something...
   });
+```
+
+### handling error
+
+`onError` is called if handlers throw exception while updating state.
+
+```javascript
+store.onError((err) => {
+  // do something
+});
+```
+
+### unregister handler
+
+register and unregister are same syntax.
+
+```javascript
+let exhandler = (state = 0, action) => { /* ... */ };
+
+store.register({ exhandler });   // registered!
+store.unregister({ exhandler }); // unregistered!
 ```
