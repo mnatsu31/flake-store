@@ -16,7 +16,8 @@ let _reducer = (arr) => arr.reduce((state, next) => {
 }, {});
 
 let _createReducer = (handlers, state, action) => {
-  return Promise.all(handlers.map(h => h.applyState(state[h.key], action))).then(_reducer);
+  let promises = handlers.map(h => h.applyState(state[h.key], action))
+  return Promise.all(promises).then(_reducer);
 };
 
 class FlakeStore extends EventEmitter {
