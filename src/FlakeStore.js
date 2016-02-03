@@ -33,6 +33,10 @@ class FlakeStore extends EventEmitter {
     // update new handlers by initiale state
     return this._update(handlers, { actionType: ActionTypes.INIT });
   }
+  unregister(handlers) {
+    let keys = Object.keys(handlers);
+    this.handlers = this.handlers.filter((h) => keys.indexOf(h.key) === -1);
+  }
   dispatch(action) {
     this.dispatcher.dispatch(action);
   }

@@ -115,4 +115,18 @@ describe('FlakeStore', () => {
 
     store.dispatch({ actionType: ERROR });
   });
+  it('unregister handlers', (done) => {
+    assert.equal(store.handlers.length, 3);
+
+    store.unregister({ counter });
+    assert.equal(store.handlers.length, 2);
+
+    store.unregister({ asyncCounter });
+    assert.equal(store.handlers.length, 1);
+
+    store.unregister({ errorHandler });
+    assert.equal(store.handlers.length, 0);
+
+    done();
+  });
 });
