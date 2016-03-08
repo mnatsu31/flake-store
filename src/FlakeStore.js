@@ -9,27 +9,19 @@ export const ActionTypes = {
 
 export const CHANGE_EVENT = 'change';
 
-let _state = {};
-
-let _reducer = (arr) => arr.reduce((state, next) => {
-  return { ...state, ...next }
-}, {});
-
-let _createReducer = (handlers, state, action) => {
-  let promises = handlers.map(h => h.applyState(state[h.key], action))
-  return Promise.all(promises).then(_reducer);
-};
+let _currentState = {};
 
 class FlakeStore extends EventEmitter {
   constructor() {
     super();
+    this.reducer = null;
+    this.queue = [];
     this.handlers = [];
     this.handleError = () => {};
-    this.reducer = Promise.resolve(_state);
   }
   // public methods
   getState() {
-    return _state;
+    return _currentState;
   }
   register(handlers) {
     // convert to Handler array
@@ -57,15 +49,41 @@ class FlakeStore extends EventEmitter {
   }
   // private methods
   _update(handlers, action) {
-    this.reducer = this.reducer.then((state) => _createReducer(handlers, state, action));
+    this.queue.push(action);
+    return new Promise((resolve, reject) => {
+      let _createReducer = (handlers, state, action) => {
+        let promises = handlers.map(h => h.applyState(state[h.key], action))
+        return Promise.all(promises).then((results) => {
+          return results.reduce((state, next) => {
+            return { ...state, ...next }
+          }, {});
+        });
+      };
 
-    return this.reducer
-      .then((newState) => {
-        _state = newState;
-        this.emit(CHANGE_EVENT);
-        return newState;
-      })
-      .catch(this.handleError);
+      let _handleQueue = (currentReducer) => {
+        currentReducer
+          .then(newState => {
+            if (action = this.queue.shift()) {
+              _handleQueue(_createReducer(handlers, newState, action));
+            } else {
+              _currentState = newState;
+              this.reducer = null;
+              this.emit(CHANGE_EVENT);
+              resolve(newState);
+            }
+          })
+          .catch(e => {
+            this.handleError(e);
+            reject(e);
+          });
+      };
+
+      if (!this.reducer) {
+        action = this.queue.shift();
+        this.reducer = _createReducer(handlers, _currentState, action);
+        _handleQueue(this.reducer);
+      }
+    });
   }
 };
 
