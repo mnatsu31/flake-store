@@ -1,9 +1,10 @@
 'use strict';
 
 import assert from 'power-assert';
+import 'babel-polyfill';
 
 import FlakeStore from '../';
-import { mergeHandlers } from '../lib/utils/mergeHandlers';
+import { mergeHandlers, waitFor } from '../';
 
 const store = new FlakeStore();
 
@@ -33,6 +34,18 @@ let asyncCounter = (state = 0, action) => {
       });
     case DECREMENTS:
       return state - 1;
+    default:
+      return state;
+  }
+}
+
+let waitCounter = (state = 0, action) => {
+  switch (action.actionType) {
+    case INCREMENTS:
+    case DECREMENTS:
+      return waitFor('counter', (state, dependencies) => {
+        return dependencies.counter % 2 === 0 ? 'even': 'odd';
+      });
     default:
       return state;
   }
@@ -108,23 +121,28 @@ describe('FlakeStore', () => {
     store.dispatch({ actionType: INCREMENTS });
     store.dispatch({ actionType: INCREMENTS });
   });
-  it('error test', (done) => {
-    store.register({ errorHandler });
+  it('wait handlers', (done) => {
+    store.register({ counter, waitCounter });
 
-    let subscriber = () => { /* ..do anything */ };
+    let subscriber = () => {
+      let state = store.getState();
+      if (state.counter === 3 && state.waitCounter === 'odd') {
+        store.unsubscribe(subscriber);
+        store.unregister({ counter, waitCounter });
+        done();
+      }
+    };
+
     store.subscribe(subscriber);
 
-    store.onError(() => {
-      store.unregister({ errorHandler });
-      done();
-    });
-
-    store.dispatch({ actionType: ERROR });
+    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: INCREMENTS });
   });
-  it ('merge handlers', (done) => {
+  it('merge handlers', (done) => {
     store.register({ merged });
 
-    let emitError = false
+    let emitError = false;
 
     let subscriber = () => {
       let state = store.getState();
@@ -148,9 +166,22 @@ describe('FlakeStore', () => {
       store.dispatch({ actionType: INCREMENTS });
     }, 1000);
   });
+  it('error test', (done) => {
+    store.register({ errorHandler });
+
+    let subscriber = () => { /* ..do anything */ };
+    store.subscribe(subscriber);
+
+    store.onError(() => {
+      store.unregister({ errorHandler });
+      done();
+    });
+
+    store.dispatch({ actionType: ERROR });
+  });
   it('unregister handlers', () => {
-    assert.equal(store.handlers.length, 1);
+    assert.equal(store.handlers.size, 1);
     store.unregister({ merged });
-    assert.equal(store.handlers.length, 0);
+    assert.equal(store.handlers.size, 0);
   });
 });

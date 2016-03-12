@@ -88,10 +88,46 @@ store.dispatch({ actionType: INCREMENTS }); // { asyncCounter: 2 }
 store.dispatch({ actionType: INCREMENTS }); // { asyncCounter: 3 }
 ```
 
+### waitFor
+
+FlakeStore supports `waitFor` to wait dependency handlers
+
+**waitFor(handlerNames, callback)**
+
+- handlerNames [String|Array[String]]
+- callback [Function(state, dependencies)]
+  - state: self state [Any]
+  - dependencies: dependencies state [Array[Object]]
+
+```javascript
+import { waitFor } from 'flakestore';
+
+let oddOrEven = (state = 0, action) => {
+  switch (action.actionType) {
+    case INCREMENTS:
+    case DECREMENTS:
+      return waitFor('counter', (state, dependencies) => {
+        // The second arguments is passed the state that depends on oddOrEven.
+        return dependencies.counter % 2 === 0 ? 'even': 'odd';
+      });
+    default:
+      return state;
+  }
+}
+
+store.register({ counter, oddOrEven });
+
+store.dispatch({ actionType: INCREMENTS }); // { counter: 1, oddOrEven: 'odd' }
+store.dispatch({ actionType: DECREMENTS }); // { counter: 0, oddOrEven: 'even' }
+store.dispatch({ actionType: INCREMENTS }); // { counter: 1, oddOrEven: 'odd' }
+store.dispatch({ actionType: INCREMENTS }); // { counter: 2, oddOrEven: 'even' }
+store.dispatch({ actionType: INCREMENTS }); // { counter: 3, oddOrEven: 'odd' }
+```
+
 ### merge handlers
 
 ```javascript
-import { mergeHandlers } from 'flakestore/lib/utils/mergeHandlers';
+import { mergeHandlers } from 'flakestore';
 
 const DOUBLE = 'DOUBLE';
 const HALF = 'HALF';

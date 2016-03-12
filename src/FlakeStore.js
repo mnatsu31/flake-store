@@ -1,7 +1,7 @@
 'use strict';
 
 import { EventEmitter } from 'events';
-import { createHandler } from './utils/createHandler';
+import { applyState, objectToMap } from './utils/_internal';
 
 export const ActionTypes = {
   INIT: '@@flake/INIT'
@@ -16,7 +16,7 @@ class FlakeStore extends EventEmitter {
     super();
     this.reducer = null;
     this.queue = [];
-    this.handlers = [];
+    this.handlers = new Map();
     this.handleError = () => {};
   }
   // public methods
@@ -25,15 +25,17 @@ class FlakeStore extends EventEmitter {
   }
   register(handlers) {
     // convert to Handler array
-    handlers = Object.keys(handlers).map((key) => createHandler(key, handlers[key]));
+    let newMap = objectToMap(handlers);
     // register new handlers
-    this.handlers = [...this.handlers, ...handlers];
+    this.handlers = new Map([...this.handlers, ...newMap]);
     // update new handlers by initiale state
-    return this._update(handlers, { actionType: ActionTypes.INIT });
+    return this._update(newMap, { actionType: ActionTypes.INIT });
   }
   unregister(handlers) {
-    let keys = Object.keys(handlers);
-    this.handlers = this.handlers.filter((h) => keys.indexOf(h.key) === -1);
+    Object.keys(handlers).map((key) => {
+      delete _currentState[key];
+      this.handlers.delete(key);
+    });
   }
   dispatch(action) {
     this._update(this.handlers, action);
@@ -51,12 +53,35 @@ class FlakeStore extends EventEmitter {
   _update(handlers, action) {
     this.queue.push(action);
     return new Promise((resolve, reject) => {
-      let _createReducer = (handlers, state, action) => {
-        let promises = handlers.map(h => h.applyState(state[h.key], action))
-        return Promise.all(promises).then((results) => {
-          return results.reduce((state, next) => {
-            return { ...state, ...next }
-          }, {});
+      let _createReducer = (targets, state, action, isWaitHandler = false) => {
+        let promises = new Map();
+        let waits = new Map();
+        for (let [key, handler] of targets.entries()) {
+          let promiseOrWait = applyState(key, handler)((isWaitHandler ? state : state[key]), action);
+          if (!(promiseOrWait instanceof Promise)) {
+            waits.set(key, promiseOrWait);
+          } else {
+            promises.set(key, promiseOrWait);
+          }
+        }
+
+        for (let [key, wait] of waits.entries()) {
+          let restKeys = Array.from(waits.keys());
+          if (wait.isReady(restKeys)) {
+            waits.set(key, wait.callback(key));
+          } else {
+            waits.set(key, () => wait);
+          }
+        }
+
+        let results = Promise.all(Array.from(promises.values())).then((results) => {
+          return results.reduce((newState, next) => {
+            return { ...newState, ...next }
+          }, state);
+        });
+
+        return waits.size === 0 ? results : results.then(newState => {
+          return _createReducer(waits, newState, action, true);
         });
       };
 
