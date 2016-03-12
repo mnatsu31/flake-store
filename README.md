@@ -88,6 +88,36 @@ store.dispatch({ actionType: INCREMENTS }); // { asyncCounter: 2 }
 store.dispatch({ actionType: INCREMENTS }); // { asyncCounter: 3 }
 ```
 
+### merge handlers
+
+```javascript
+import { mergeHandlers } from 'flakestore/lib/utils/mergeHandlers';
+
+const DOUBLE = 'DOUBLE';
+const HALF = 'HALF';
+
+let doubleAndHalfCounter = (state = 0, action) => {
+  switch(action.actionType) {
+    case DOUBLE:
+      return state * 2;
+    case HALF:
+      return state / 2;
+    default:
+      return state;
+  }
+};
+
+let mergedCounter = mergeHandlers([ counter, doubleAndHalfCounter ]);
+
+store.register({ mergedCounter });
+
+store.dispatch({ actionType: INCREMENTS }); // { mergedCounter: 1 }
+store.dispatch({ actionType: DOUBLE }); // { mergedCounter: 2 }
+store.dispatch({ actionType: DOUBLE }); // { mergedCounter: 4 }
+store.dispatch({ actionType: HALF }); // { mergedCounter: 2 }
+store.dispatch({ actionType: DECREMENTS }); // { mergedCounter: 1 }
+```
+
 ### handling initialization
 
 The register method returns `Promise`, so you can call `then` and handle initialization.
