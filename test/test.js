@@ -39,12 +39,24 @@ let asyncCounter = (state = 0, action) => {
   }
 }
 
-let waitCounter = (state = 0, action) => {
+let oddOrEven = (state = 'even', action) => {
   switch (action.actionType) {
     case INCREMENTS:
     case DECREMENTS:
-      return waitFor('counter', (state, dependencies) => {
-        return dependencies.counter % 2 === 0 ? 'even': 'odd';
+      return waitFor('asyncCounter', (state, dependencies) => {
+        return dependencies.asyncCounter % 2 === 0 ? 'even': 'odd';
+      });
+    default:
+      return state;
+  }
+}
+
+let upperCase = (state = '', action) => {
+  switch (action.actionType) {
+    case INCREMENTS:
+    case DECREMENTS:
+      return waitFor(['asyncCounter', 'oddOrEven'], (state, dependencies) => {
+        return dependencies.oddOrEven.toUpperCase();
       });
     default:
       return state;
@@ -122,13 +134,13 @@ describe('FlakeStore', () => {
     store.dispatch({ actionType: INCREMENTS });
   });
   it('wait handlers', (done) => {
-    store.register({ counter, waitCounter });
+    store.register({ asyncCounter, oddOrEven, upperCase });
 
     let subscriber = () => {
       let state = store.getState();
-      if (state.counter === 3 && state.waitCounter === 'odd') {
+      if (state.asyncCounter === 3 && state.oddOrEven === 'odd' && state.upperCase === 'ODD') {
         store.unsubscribe(subscriber);
-        store.unregister({ counter, waitCounter });
+        store.unregister({ asyncCounter, oddOrEven, upperCase });
         done();
       }
     };
