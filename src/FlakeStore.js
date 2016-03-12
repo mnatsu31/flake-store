@@ -73,6 +73,7 @@ class FlakeStore extends EventEmitter {
             }
           })
           .catch(e => {
+            this.reducer = null;
             this.handleError(e);
             reject(e);
           });
