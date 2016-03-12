@@ -3,6 +3,7 @@
 import assert from 'power-assert';
 
 import FlakeStore from '../';
+import { mergeHandlers } from '../lib/utils/mergeHandlers';
 
 const store = new FlakeStore();
 
@@ -45,6 +46,8 @@ let errorHandler = (state = void 0, action) => {
       return state;
   }
 }
+
+let merged = mergeHandlers([counter, errorHandler]);
 
 describe('FlakeStore', () => {
   it('handler test', () => {
@@ -92,6 +95,7 @@ describe('FlakeStore', () => {
       let state = store.getState();
       if (state.asyncCounter === 3) {
         store.unsubscribe(subscriber);
+        store.unregister({ counter, asyncCounter });
         done();
       }
     };
@@ -110,20 +114,43 @@ describe('FlakeStore', () => {
     let subscriber = () => { /* ..do anything */ };
     store.subscribe(subscriber);
 
-    store.onError(() => { done() });
+    store.onError(() => {
+      store.unregister({ errorHandler });
+      done();
+    });
 
     store.dispatch({ actionType: ERROR });
   });
+  it ('merge handlers', (done) => {
+    store.register({ merged });
+
+    let emitError = false
+
+    let subscriber = () => {
+      let state = store.getState();
+      if (state.merged === 3 && emitError) {
+        store.unsubscribe(subscriber);
+        done();
+      }
+    };
+
+    store.subscribe(subscriber);
+
+    store.onError(() => {
+      emitError = true;
+    });
+
+    store.dispatch({ actionType: ERROR });
+
+    setTimeout(() => {
+      store.dispatch({ actionType: INCREMENTS });
+      store.dispatch({ actionType: INCREMENTS });
+      store.dispatch({ actionType: INCREMENTS });
+    }, 1000);
+  });
   it('unregister handlers', () => {
-    assert.equal(store.handlers.length, 3);
-
-    store.unregister({ counter });
-    assert.equal(store.handlers.length, 2);
-
-    store.unregister({ asyncCounter });
     assert.equal(store.handlers.length, 1);
-
-    store.unregister({ errorHandler });
+    store.unregister({ merged });
     assert.equal(store.handlers.length, 0);
   });
 });
