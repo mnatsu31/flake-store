@@ -126,32 +126,56 @@ store.dispatch({ actionType: INCREMENTS }); // { counter: 3, oddOrEven: 'odd' }
 
 ### merge handlers
 
+`mergeHandlers` supports type either array of handler[Object] or object handlers.
+handler[Object] is the handler which return the state has type of Object.
+
+**mergeHandlers(handlers)**
+
+- handlers [Array[Handler[Object]]|Object{String:Handler}]
+
 ```javascript
 import { mergeHandlers } from 'flakestore';
 
-const DOUBLE = 'DOUBLE';
-const HALF = 'HALF';
-
-let doubleAndHalfCounter = (state = 0, action) => {
+let increments = (state = { num: 0, count: 0 }, action) => {
   switch(action.actionType) {
-    case DOUBLE:
-      return state * 2;
-    case HALF:
-      return state / 2;
+    case INCREMENTS:
+      return { num: state.num + 1, count: state.count + 1 };
     default:
       return state;
   }
 };
 
-let mergedCounter = mergeHandlers([ counter, doubleAndHalfCounter ]);
+let decrements = (state = { num: 0, count: 0 }, action) => {
+  switch(action.actionType) {
+    case DECREMENTS:
+      return { num: state.num - 1, count: state.count + 1 };
+    default:
+      return state;
+  }
+};
 
-store.register({ mergedCounter });
+let mergedObject = mergeHandlers({ increments, decrements });
+let mergedArray = mergeHandlers([ increments, decrements ]);
 
-store.dispatch({ actionType: INCREMENTS }); // { mergedCounter: 1 }
-store.dispatch({ actionType: DOUBLE }); // { mergedCounter: 2 }
-store.dispatch({ actionType: DOUBLE }); // { mergedCounter: 4 }
-store.dispatch({ actionType: HALF }); // { mergedCounter: 2 }
-store.dispatch({ actionType: DECREMENTS }); // { mergedCounter: 1 }
+store.register({ mergedObject });
+
+store.dispatch({ actionType: INCREMENTS }); // { mergedObject: { increments: { num: 1, count: 1 }, decrements: { num: 0, count: 0 } } }
+store.dispatch({ actionType: INCREMENTS }); // { mergedObject: { increments: { num: 2, count: 2 }, decrements: { num: 0, count: 0 } } }
+store.dispatch({ actionType: INCREMENTS }); // { mergedObject: { increments: { num: 3, count: 3 }, decrements: { num: 0, count: 0 } } }
+store.dispatch({ actionType: DECREMENTS }); // { mergedObject: { increments: { num: 3, count: 3 }, decrements: { num: -1, count: 1 } } }
+store.dispatch({ actionType: DECREMENTS }); // { mergedObject: { increments: { num: 3, count: 3 }, decrements: { num: -2, count: 2 } } }
+
+store.unregister({ mergedObject });
+
+store.register({ mergedArray });
+
+store.dispatch({ actionType: INCREMENTS }); // { mergedArray: { num: 1, count: 1 } }
+store.dispatch({ actionType: INCREMENTS }); // { mergedArray: { num: 2, count: 2 } }
+store.dispatch({ actionType: INCREMENTS }); // { mergedArray: { num: 3, count: 3 } }
+store.dispatch({ actionType: DECREMENTS }); // { mergedArray: { num: 2, count: 4 } }
+store.dispatch({ actionType: DECREMENTS }); // { mergedArray: { num: 1, count: 5 } }
+
+store.unregister({ mergedArray });
 ```
 
 ### handling initialization

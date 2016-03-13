@@ -63,6 +63,24 @@ let upperCase = (state = '', action) => {
   }
 }
 
+let increments = (state = { num: 0, count: 0 }, action) => {
+  switch(action.actionType) {
+    case INCREMENTS:
+      return { num: state.num + 1, count: state.count + 1 };
+    default:
+      return state;
+  }
+};
+
+let decrements = (state = { num: 0, count: 0 }, action) => {
+  switch(action.actionType) {
+    case DECREMENTS:
+      return { num: state.num - 1, count: state.count + 1 };
+    default:
+      return state;
+  }
+};
+
 let errorHandler = (state = void 0, action) => {
   switch (action.actionType) {
     case ERROR:
@@ -72,7 +90,8 @@ let errorHandler = (state = void 0, action) => {
   }
 }
 
-let merged = mergeHandlers([counter, errorHandler]);
+let mergedObject = mergeHandlers({ increments, decrements });
+let mergedArray = mergeHandlers([increments, decrements]);
 
 describe('FlakeStore', () => {
   it('handler test', () => {
@@ -151,14 +170,13 @@ describe('FlakeStore', () => {
     store.dispatch({ actionType: INCREMENTS });
     store.dispatch({ actionType: INCREMENTS });
   });
-  it('merge handlers', (done) => {
-    store.register({ merged });
-
-    let emitError = false;
+  it('merge handlers with handlers object', (done) => {
+    store.register({ mergedObject });
 
     let subscriber = () => {
       let state = store.getState();
-      if (state.merged === 3 && emitError) {
+      let { increments, decrements } = state.mergedObject;
+      if (increments.num === 3 && decrements.num === -2 && increments.count === 3 && decrements.count === 2) {
         store.unsubscribe(subscriber);
         done();
       }
@@ -166,17 +184,31 @@ describe('FlakeStore', () => {
 
     store.subscribe(subscriber);
 
-    store.onError(() => {
-      emitError = true;
-    });
+    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: DECREMENTS });
+    store.dispatch({ actionType: DECREMENTS });
+  });
+  it('merge handlers with array of handler[Object]', (done) => {
+    store.register({ mergedArray });
 
-    store.dispatch({ actionType: ERROR });
+    let subscriber = () => {
+      let state = store.getState();
+      let { num, count } = state.mergedArray;
+      if (num === 1 && count === 5) {
+        store.unsubscribe(subscriber);
+        done();
+      }
+    };
 
-    setTimeout(() => {
-      store.dispatch({ actionType: INCREMENTS });
-      store.dispatch({ actionType: INCREMENTS });
-      store.dispatch({ actionType: INCREMENTS });
-    }, 1000);
+    store.subscribe(subscriber);
+
+    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: DECREMENTS });
+    store.dispatch({ actionType: DECREMENTS });
   });
   it('error test', (done) => {
     store.register({ errorHandler });
@@ -192,8 +224,8 @@ describe('FlakeStore', () => {
     store.dispatch({ actionType: ERROR });
   });
   it('unregister handlers', () => {
-    assert.equal(store.handlers.size, 1);
-    store.unregister({ merged });
+    assert.equal(store.handlers.size, 2);
+    store.unregister({ mergedObject, mergedArray });
     assert.equal(store.handlers.size, 0);
   });
 });
