@@ -17,8 +17,12 @@ export function applyState(key, handler) {
   return (state, action) => {
     let stateOrWait = handler(state, action);
     let isWait = stateOrWait && stateOrWait[waitSymbol];
-    return isWait ? stateOrWait : Promise.resolve(stateOrWait).then(value => {
+    return isWait ? stateOrWait : wrapPromise(stateOrWait).then(value => {
       return { [key]: value };
     });
   };
+}
+
+export function wrapPromise(value) {
+  return Promise.resolve(value);
 }

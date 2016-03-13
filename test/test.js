@@ -185,10 +185,10 @@ describe('FlakeStore', () => {
     store.subscribe(subscriber);
 
     store.dispatch({ actionType: INCREMENTS });
-    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: DECREMENTS });
     store.dispatch({ actionType: INCREMENTS });
     store.dispatch({ actionType: DECREMENTS });
-    store.dispatch({ actionType: DECREMENTS });
+    store.dispatch({ actionType: INCREMENTS });
   });
   it('merge handlers with array of handler[Object]', (done) => {
     store.register({ mergedArray });
@@ -205,10 +205,10 @@ describe('FlakeStore', () => {
     store.subscribe(subscriber);
 
     store.dispatch({ actionType: INCREMENTS });
-    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: DECREMENTS });
     store.dispatch({ actionType: INCREMENTS });
     store.dispatch({ actionType: DECREMENTS });
-    store.dispatch({ actionType: DECREMENTS });
+    store.dispatch({ actionType: INCREMENTS });
   });
   it('error test', (done) => {
     store.register({ errorHandler });
