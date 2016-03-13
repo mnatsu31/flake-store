@@ -81,6 +81,26 @@ let decrements = (state = { num: 0, count: 0 }, action) => {
   }
 };
 
+let wIncrements = (state = { num: 0, count: 0 }, action) => {
+  switch(action.actionType) {
+    case INCREMENTS:
+      return waitFor('counter', (state, dependencies) => {
+        return Promise.resolve({ num: state.num + 1, count: state.count + 1 });
+      });
+    default:
+      return state;
+  }
+};
+
+let pDecrements = (state = { num: 0, count: 0 }, action) => {
+  switch(action.actionType) {
+    case DECREMENTS:
+      return Promise.resolve({ num: state.num - 1, count: state.count + 1 });
+    default:
+      return state;
+  }
+};
+
 let errorHandler = (state = void 0, action) => {
   switch (action.actionType) {
     case ERROR:
@@ -90,8 +110,14 @@ let errorHandler = (state = void 0, action) => {
   }
 }
 
-let mergedObject = mergeHandlers({ increments, decrements });
-let mergedArray = mergeHandlers([increments, decrements]);
+let mo = mergeHandlers({ increments, decrements });
+let mop = mergeHandlers({ increments, pDecrements });
+let mow = mergeHandlers({ wIncrements, decrements });
+let mopw = mergeHandlers({ wIncrements, pDecrements });
+let ma = mergeHandlers([increments, decrements]);
+let map = mergeHandlers([ increments, pDecrements ]);
+let maw = mergeHandlers([ wIncrements, decrements ]);
+let mapw = mergeHandlers([ wIncrements, pDecrements ]);
 
 describe('FlakeStore', () => {
   it('handler test', () => {
@@ -171,13 +197,77 @@ describe('FlakeStore', () => {
     store.dispatch({ actionType: INCREMENTS });
   });
   it('merge handlers with handlers object', (done) => {
-    store.register({ mergedObject });
+    store.register({ mo });
 
     let subscriber = () => {
       let state = store.getState();
-      let { increments, decrements } = state.mergedObject;
+      let { increments, decrements } = state.mo;
       if (increments.num === 3 && decrements.num === -2 && increments.count === 3 && decrements.count === 2) {
         store.unsubscribe(subscriber);
+        store.unregister({ mo });
+        done();
+      }
+    };
+
+    store.subscribe(subscriber);
+
+    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: DECREMENTS });
+    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: DECREMENTS });
+    store.dispatch({ actionType: INCREMENTS });
+  });
+  it('merge handlers with handlers object [with Promise]', (done) => {
+    store.register({ mop });
+
+    let subscriber = () => {
+      let state = store.getState();
+      let { increments, pDecrements } = state.mop;
+      if (increments.num === 3 && pDecrements.num === -2 && increments.count === 3 && pDecrements.count === 2) {
+        store.unsubscribe(subscriber);
+        store.unregister({ mop });
+        done();
+      }
+    };
+
+    store.subscribe(subscriber);
+
+    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: DECREMENTS });
+    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: DECREMENTS });
+    store.dispatch({ actionType: INCREMENTS });
+  });
+  it('merge handlers with handlers object [with waitFor]', (done) => {
+    store.register({ counter, mow });
+
+    let subscriber = () => {
+      let state = store.getState();
+      let { wIncrements, decrements } = state.mow;
+      if (wIncrements.num === 3 && decrements.num === -2 && wIncrements.count === 3 && decrements.count === 2) {
+        store.unsubscribe(subscriber);
+        store.unregister({ counter, mow });
+        done();
+      }
+    };
+
+    store.subscribe(subscriber);
+
+    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: DECREMENTS });
+    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: DECREMENTS });
+    store.dispatch({ actionType: INCREMENTS });
+  });
+  it('merge handlers with handlers object [with Promise and waitFor]', (done) => {
+    store.register({ counter, mopw });
+
+    let subscriber = () => {
+      let state = store.getState();
+      let { wIncrements, pDecrements } = state.mopw;
+      if (wIncrements.num === 3 && pDecrements.num === -2 && wIncrements.count === 3 && pDecrements.count === 2) {
+        store.unsubscribe(subscriber);
+        store.unregister({ counter, mopw });
         done();
       }
     };
@@ -191,13 +281,77 @@ describe('FlakeStore', () => {
     store.dispatch({ actionType: INCREMENTS });
   });
   it('merge handlers with array of handler[Object]', (done) => {
-    store.register({ mergedArray });
+    store.register({ ma });
 
     let subscriber = () => {
       let state = store.getState();
-      let { num, count } = state.mergedArray;
+      let { num, count } = state.ma;
       if (num === 1 && count === 5) {
         store.unsubscribe(subscriber);
+        store.unregister({ ma });
+        done();
+      }
+    };
+
+    store.subscribe(subscriber);
+
+    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: DECREMENTS });
+    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: DECREMENTS });
+    store.dispatch({ actionType: INCREMENTS });
+  });
+  it('merge handlers with array of handler[Object] [with Promise]', (done) => {
+    store.register({ map });
+
+    let subscriber = () => {
+      let state = store.getState();
+      let { num, count } = state.map;
+      if (num === 1 && count === 5) {
+        store.unsubscribe(subscriber);
+        store.unregister({ map });
+        done();
+      }
+    };
+
+    store.subscribe(subscriber);
+
+    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: DECREMENTS });
+    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: DECREMENTS });
+    store.dispatch({ actionType: INCREMENTS });
+  });
+  it('merge handlers with array of handler[Object] [with waitFor]', (done) => {
+    store.register({ counter, maw });
+
+    let subscriber = () => {
+      let state = store.getState();
+      let { num, count } = state.maw;
+      if (num === 1 && count === 5) {
+        store.unsubscribe(subscriber);
+        store.unregister({ counter, maw });
+        done();
+      }
+    };
+
+    store.subscribe(subscriber);
+
+    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: DECREMENTS });
+    store.dispatch({ actionType: INCREMENTS });
+    store.dispatch({ actionType: DECREMENTS });
+    store.dispatch({ actionType: INCREMENTS });
+  });
+  it('merge handlers with array of handler[Object] [with Promise and waitFor]', (done) => {
+    store.register({ counter, mapw });
+
+    let subscriber = () => {
+      let state = store.getState();
+      let { num, count } = state.mapw;
+      if (num === 1 && count === 5) {
+        store.unsubscribe(subscriber);
+        store.unregister({ counter, mapw });
         done();
       }
     };
@@ -224,8 +378,6 @@ describe('FlakeStore', () => {
     store.dispatch({ actionType: ERROR });
   });
   it('unregister handlers', () => {
-    assert.equal(store.handlers.size, 2);
-    store.unregister({ mergedObject, mergedArray });
     assert.equal(store.handlers.size, 0);
   });
 });

@@ -1,7 +1,7 @@
 'use strict';
 
 import { EventEmitter } from 'events';
-import { applyState, objectToMap } from './utils/_internal';
+import { objectToMap, applyState, reducePromises, isPromise } from './utils/_internal';
 
 export const ActionTypes = {
   INIT: '@@flake/INIT'
@@ -57,8 +57,9 @@ class FlakeStore extends EventEmitter {
         let promises = new Map();
         let waits = new Map();
         for (let [key, handler] of targets.entries()) {
-          let promiseOrWait = applyState(key, handler)((isWaitHandler ? state : state[key]), action);
-          if (!(promiseOrWait instanceof Promise)) {
+          let h = applyState(key, handler);
+          let promiseOrWait = isWaitHandler ? h(state[key], state) : h(state[key], action);
+          if (!isPromise(promiseOrWait)) {
             waits.set(key, promiseOrWait);
           } else {
             promises.set(key, promiseOrWait);
@@ -68,17 +69,13 @@ class FlakeStore extends EventEmitter {
         for (let [key, wait] of waits.entries()) {
           let restKeys = Array.from(waits.keys());
           if (wait.isReady(restKeys)) {
-            waits.set(key, wait.callback(key));
+            waits.set(key, wait.callback);
           } else {
             waits.set(key, () => wait);
           }
         }
 
-        let results = Promise.all(Array.from(promises.values())).then((results) => {
-          return results.reduce((newState, next) => {
-            return { ...newState, ...next }
-          }, state);
-        });
+        let results = reducePromises(Array.from(promises.values()), state);
 
         return waits.size === 0 ? results : results.then(newState => {
           return _createReducer(waits, newState, action, true);

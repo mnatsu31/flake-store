@@ -12,14 +12,13 @@ export function waitFor(waitKeys, callback) {
   waitKeys = Array.isArray(waitKeys) ? waitKeys : [waitKeys];
   return {
     [waitSymbol]: true,
-    callback(key) {
-      return (state) => {
-        let dependencies = waitKeys.reduce((current, next) => {
-          current[next] = state[next];
-          return current;
-        }, {});
-        return callback(state[key], dependencies);
-      }
+    waitKeys: waitKeys,
+    callback(state, allState) {
+      let dependencies = waitKeys.reduce((current, next) => {
+        current[next] = allState[next];
+        return current;
+      }, {});
+      return callback(state, dependencies);
     },
     isReady(restKeys) {
       return xor(waitKeys, restKeys).length === 0;

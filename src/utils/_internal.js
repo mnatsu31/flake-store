@@ -26,3 +26,15 @@ export function applyState(key, handler) {
 export function wrapPromise(value) {
   return Promise.resolve(value);
 }
+
+export function reducePromises(promises, state) {
+  return Promise.all(promises).then(results => {
+    return results.reduce((newState, next) => {
+      return { ...newState, ...next };
+    }, state);
+  });
+}
+
+export function isPromise(value) {
+  return value && Object(value) === value && typeof value.then === 'function';
+}
