@@ -126,7 +126,7 @@ store.dispatch({ actionType: INCREMENTS }); // { counter: 3, oddOrEven: 'odd' }
 
 ### merge handlers
 
-`mergeHandlers` supports type either array of handler[Object] or object handlers.
+`mergeHandlers` supports type either array of handler[Object] or object handlers.  
 handler[Object] is the handler which return the state has type of Object.
 
 **mergeHandlers(handlers)**
